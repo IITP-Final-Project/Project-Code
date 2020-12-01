@@ -1,0 +1,15 @@
+{
+	"mappings": {
+		"properties": {
+			"category": {
+				"type": "text"
+			},
+			"name": {
+				"type": "text"
+			},
+			"explanation": {
+				"type": "text"
+			}
+		}
+	}
+}

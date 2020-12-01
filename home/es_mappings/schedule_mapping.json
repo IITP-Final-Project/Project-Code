@@ -1,0 +1,22 @@
+{
+	"mappings": {
+		"properties": {
+			"userID": {
+				"type": "keyword"
+			},
+			"subject": {
+				"type": "text"
+			},
+			"content": {
+				"type": "text"
+			},
+			"place": {
+				"type": "text"
+			},
+			"deadline": {
+				"type": "date",
+				"format": "yyyy-MM-dd||yyyy-MM-dd HH:mm:ss||yyyy/MM/dd||epoch_millis"
+			}
+		}
+	}
+}

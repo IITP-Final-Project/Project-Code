@@ -1,0 +1,49 @@
+mongo-url = "mongodb://222.239.90.78:57417"
+elasticsearch-urls = ["http://localhost:9200"]
+
+elasticsearch-max-conns = 10
+
+#replay = true
+#resume = true
+#resume-name = "default"
+
+#namespace-regex = ''
+direct-read-namespaces = ["from_school"]#, "2..."]
+
+
+[logs]
+#info = "/var/logs/monstache/info.log"
+#warn = "/var/logs/monstache/warn.log"
+#error = "/var/logs/monstache/error.log"
+#trace = "/var/logs/monstache/trace.log"
+
+
+
+[[mapping]]
+namespace = "from_school"
+index = "bus"
+
+[[mapping]]
+#namespace = "2..."
+#index = "index2"
+
+
+
+[[script]]
+#namespace = "2..."
+#routing = true
+script = """
+module.exports = function(doc) {
+   #doc._meta_monstache = { type: doc.type };
+   #if (doc.type === "child_info") {
+      #doc._meta_monstache.parent = doc.parent;
+      #doc._meta_monstache.type = "child_info";
+   #}
+   var newdoc = {
+      # name : doc.name,
+      # director : doc.director,
+      # actors : doc.actors,
+   }
+   return newdoc;
+}
+"""

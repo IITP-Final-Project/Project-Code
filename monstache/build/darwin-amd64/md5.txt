@@ -1,0 +1,1 @@
+7b12dc3253b752bf5954f8d42336dada  build/darwin-amd64/monstache

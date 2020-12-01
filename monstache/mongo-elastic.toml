@@ -1,0 +1,15 @@
+mongo-url = "mongodb://admin:1234@222.239.90.78:30002"
+elasticsearch-urls = ["http://localhost:9200"]
+
+elasticsearch-max-conns = 10
+
+direct-read-namespaces = ["chat_bot.from_school"]#, "2..."]
+
+
+[logs]
+
+
+
+[[mapping]]
+namespace = "chat_bot.from_school"
+index = "bus"

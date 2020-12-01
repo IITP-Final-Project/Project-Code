@@ -1,0 +1,21 @@
+{
+	"mappings": {
+		"properties": {
+			"lecture": {
+				"type": "text"
+			},
+			"teacher": {
+				"type": "text"
+			},
+			"rate": {
+				"type": "float"
+			},
+			"semester": {
+				"type": "text"
+			},
+			"context": {
+				"type": "text"
+			}
+		}
+	}
+}
