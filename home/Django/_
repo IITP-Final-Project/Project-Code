@@ -1,0 +1,37 @@
+import requests
+import os
+import django
+import datetime
+from bs4 import BeautifulSoup
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "bot.settings")
+django.setup()
+
+from parsed_data.models import club_intro
+
+def club_crawler():
+    category = ['science_technology','volunteer_activities','stage_arts','exhibition_creation','religion','physical','acadmic']
+    for i in range(len(category)):
+        now = datetime.datetime.now()
+        req = requests.get('https://sejong.korea.ac.kr/campuslife/student/clubs/'+category[i])
+        html = req.text
+        soup = BeautifulSoup(html, 'html.parser')
+
+        data1 = soup.findAll('div', {'class' : 'text'})
+        for j in data1:
+            data2= j.findAll('p',{'class' : 'marB20'})
+            print(j.h4.text)
+            print('\n################################################\n')
+            for k in data2:
+                l.append(k.text.strip())
+            print(l)
+            print('\n$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n')
+#        print(data1)
+#        data2 = data1.findAll('h4')
+#        data3 = data1.findAll('div', {'class' :'text'})
+#        for j in range(len(data2)):
+#            print(data2[j].text, '\n')
+#            print(data3[j].text, '\n')
+        print('----------------------------------------------------')
+
+club_crawler()
