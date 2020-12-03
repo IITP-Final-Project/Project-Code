@@ -2,12 +2,12 @@ from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
-from plan.models import Plan2
 import datetime
 from datetime import timedelta
 from django.db.models import Count
 import re
 from elasticsearch import Elasticsearch
+
 
 # Create your views here.
 @csrf_exempt
@@ -17,9 +17,13 @@ def show_plan(count, plan_db): # 일정 확인 텍스트부분
         return msg
     else:
         msg = '일정이 ' + str(count) + '개 있습니다.\n\n'
-        for i in range(count):
-            tmp = plan_db[i]
-            msg += str(i+1) + '.\n' + '장소:' + tmp.place + '\n\n내용:' + tmp.content + '\n\n' 
+        result1 = []
+        result2 = []
+        for hit in plan_db:
+            result1.append(hit['_source']['place'])
+            result2.append(hit['_source']['subject'])
+        for i in range(len(result1)):
+            msg += str(i+1) + '.\n장소:' + result1[i] + '\n\n내용:' + result2[i] + '\n\n' 
         return msg
 
 @csrf_exempt
@@ -29,9 +33,22 @@ def start_plan(request): # 일정 시작
     return_str = return_json_str['userRequest']['utterance'] # 사용자의 발화만 뽑아냄
     user_info = return_json_str['userRequest']['user']['properties']['plusfriendUserKey'] # 유저 식별용으로 받음
     now = datetime.date.today()
-    plan_db = Plan2.objects.filter(date = now, user = user_info)
-    plan_count = plan_db.count()
-    
+    es = Elasticsearch('localhost:9200')
+    body = {
+            'size':20,
+            'query':{
+                'bool':{
+                    'must':[
+                        {'term':{'deadline':now}},
+                        {'term':{'userID':user_info}}
+                        ],
+                    }
+                }
+            }
+    res = es.search(index='schedule', body=body)
+    plan_db = res['hits']['hits']
+    plan_count = len(plan_db)
+
     return JsonResponse({
         'version': '2.0',
         'template': {
@@ -70,29 +87,17 @@ def message(request):
     date = return_act['date']['origin']
     place = return_act['place']['origin']
     content = return_act['content']['origin']
-    
     if return_str == '일정 등록':
-
-        save_plan = Plan2(user=user_info, date=date, place=place, content=content)
-        save_plan.save()
+        es = Elasticsearch('localhost:9200')
+        body={'userID': user_info, 'subject': content, 'deadline': date, 'place': place}
+        es.index(index='schedule', body=body)
         return JsonResponse({
             'version': '2.0',
             'template': {
                 'outputs': [{
                     'basicCard': {
                         'description': '일시:' + date + '\n\n' + '장소:' + place + '\n\n' + '내용:' + content +
-                                '\n\n일정을 잘 저장했어요!',
-                        'buttons': [
-                            {
-                                'label': '일정 수정',
-                                'action': 'message',
-                                'messageText': '등록 중 일정 수정'
-                            },
-                            {
-                                'label': '취소',
-                                'action': 'message',
-                                'messageText': '등록 중 일정 삭제'
-                            }]
+                                '\n\n일정을 잘 저장했어요!'
                     }}],
                 'quickReplies': [{
                         'label': '처음으로',
@@ -127,8 +132,21 @@ def check_plan(request):
     user_info = return_json_str['userRequest']['user']['properties']['plusfriendUserKey']
     return_act = return_json_str['action']['detailParams']
     date = return_act['select_date']['origin']
-    plan_db = Plan2.objects.filter(date = date, user = user_info)
-    plan_count = plan_db.count()
+    es = Elasticsearch('localhost:9200')
+    body = {
+        'size':20,
+        'query':{
+            'bool':{
+                'must':[
+                    {'term':{'deadline':date}},
+                    {'term':{'userID':user_info}}
+                    ],
+                }
+            }
+        }
+    res = es.search(index='schedule', body=body)
+    plan_db = res['hits']['hits']
+    plan_count = len(plan_db)
     
     if plan_count != 0:
         return JsonResponse({
@@ -181,16 +199,41 @@ def check_plan_date(request):
     return_str = return_json_str['userRequest']['utterance']
     user_info = return_json_str['userRequest']['user']['properties']['plusfriendUserKey']
     return_act = return_json_str['action']['detailParams']
-    plan_db = Plan2.objects.filter(user=user_info).values('date').annotate(total=Count('date')).order_by('date')
-    msg = ''
-    for i in range(len(plan_db)):
-        msg = msg + str(plan_db[i]['date']) + ' : ' + str(plan_db[i]['total']) + '개\n\n'
+    es = Elasticsearch('localhost:9200')
+    body = {
+        'size':0,
+        'query':{
+            'bool':{
+                'must':[
+                    {'term':{'userID':user_info}}
+                    ]
+                }
+            },
+        'aggs':{
+            'date_his':{
+                'terms':{
+                    'field':'deadline'
+                    }
+                }
+            }
+        }
+    res = es.search(index='schedule', body=body)
+    all_plan = res['hits']['total']['value']
+    plan_db = res['aggregations']['date_his']['buckets']
+    result1 = []
+    result2 = []
+    for hit in plan_db:
+        result1.append(hit['key_as_string'])
+        result2.append(hit['doc_count'])
+        msg = ''
+        for i in range(len(result1)):
+            msg = msg + str(result1[i]) + ' : ' + str(result2[i]) + '개\n\n'
     return JsonResponse({
         'version': '2.0',
         'template': {
             'outputs': [{
                 'basicCard': {
-                    'description':'일정이 총 '+ str(len(plan_db))+'개 있어요.\n\n'+msg,
+                    'description':'일정이 총 '+ str(all_plan)+'개 있어요.\n\n'+msg,
                     'buttons': [
                         {
                             'label': '상세조회',
@@ -209,35 +252,6 @@ def check_plan_date(request):
 
 
 @csrf_exempt
-def change_plan(request):
-    answer = ((request.body).decode('utf-8'))
-    return_json_str = json.loads(answer)
-    return_str = return_json_str['userRequest']['utterance']
-    user_info = return_json_str['userRequest']['user']['properties']['plusfriendUserKey']
-    return_act = return_json_str['action']['detailParams']
-    ch_date = return_act['ch_date']['origin']
-    ch_place = return_act['ch_place']['origin']
-    ch_content = return_act['ch_content']['origin']
-    recent_plan = Plan2.objects.filter(user=user_info).last()
-    recent_plan.delete()
-    Plan2(user=user_info, date=ch_date, place=ch_place, content=ch_content).save()
-    return JsonResponse({
-        'version': '2.0',
-        'template': {
-            'outputs': [{
-                'simpleText': {
-                        'text': str(ch_date) + '\n\n' + ch_place + '\n\n' + ch_content + '\n\n일정 수정 완료!'
-                    }
-                }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action': 'message',
-                    'messageText': '처음으로'
-                }]
-            }
-        })
-
-@csrf_exempt
 def select_change_plan(request):
     answer = ((request.body).decode('utf-8'))
     return_json_str = json.loads(answer)
@@ -247,20 +261,31 @@ def select_change_plan(request):
     date = return_act['date']['origin']
     num = return_act['num']['origin']
     input_num = re.findall("\d+", num)
-    plan_db = Plan2.objects.filter(user=user_info, date = date)
     plan_num = int(input_num[0])-1
-    ch_plan = plan_db[plan_num]
-
+    es = Elasticsearch('localhost:9200')
+    body = {
+            'query':{
+                'bool':{
+                    'must':[
+                        {'term':{'deadline':date}},
+                        {'term':{'userID': user_info}}
+                        ]
+                    }
+                }
+            }
+    res = es.search(index='schedule',body=body)
+    doc_id = res['hits']['hits'][plan_num]['_id']
+    doc_source = res['hits']['hits'][plan_num]['_source']	
     if return_str == '조회 후 날짜 수정':
         ch_date = return_act['ch_date']['origin']
-        ch_plan.date = ch_date
-        ch_plan.save()
+        doc_source['deadline'] = ch_date
+        es.index(index='schedule', id=doc_id, body=doc_source)
         return JsonResponse({
             'version': '2.0',
             'template': {
                 'outputs': [{
                     'simpleText': {
-                        'text': '날짜 : '+str(ch_plan.date)+'\n\n장소 : '+ch_plan.place+'\n\n내용 : '+ch_plan.content + '\n\n일정 수정완료!'
+                        'text': '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n일정 수정완료!'
                         }
                 }],
                 'quickReplies': [{
@@ -272,14 +297,14 @@ def select_change_plan(request):
         })
     elif return_str == '조회 후 장소 수정':
         ch_place = return_act['ch_place']['origin']
-        ch_plan.place = ch_place
-        ch_plan.save()
+        doc_source['place'] = ch_place
+        es.index(index='schedule', id=doc_id, body=doc_source)
         return JsonResponse({
             'version': '2.0',
             'template': {
                 'outputs': [{
                     'simpleText': {
-                        'text': '날짜 : '+str(ch_plan.date)+'\n\n장소 : '+ch_plan.place+'\n\n내용 : '+ch_plan.content + '\n\n일정 수정완료!'
+                        'text': '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n>일정 수정완료!'
                         }
                     }],
                 'quickReplies': [{
@@ -291,14 +316,14 @@ def select_change_plan(request):
             })
     elif return_str == '조회 후 내용 수정':
         ch_content = return_act['ch_content']['origin']
-        ch_plan.content = ch_content
-        ch_plan.save()
+        doc_source['subject'] = ch_content
+        es.index(index='schedule', id=doc_id, body=doc_source)
         return JsonResponse({
             'version': '2.0',
             'template': {
                 'outputs': [{
                     'simpleText': {
-                        'text': '날짜 : '+str(ch_plan.date)+'\n\n장소 : '+ch_plan.place+'\n\n내용 : '+ch_plan.content + '\n\n일정 수정완료!'
+                        'text': '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n>일정 수정완료!'
                         }
                     }],
                 'quickReplies': [{
@@ -309,39 +334,6 @@ def select_change_plan(request):
                 }
             })
 
-@csrf_exempt
-def delete_plan(request):
-    answer = ((request.body).decode('utf-8'))
-    return_json_str = json.loads(answer)
-    return_str = return_json_str['userRequest']['utterance']
-    user_info = return_json_str['userRequest']['user']['properties']['plusfriendUserKey']
-    return_act = return_json_str['action']['detailParams']
-    msg=''
-
-    if return_str == '등록 중 일정 삭제':
-        recent_plan = Plan2.objects.filter(user=user_info).last()
-        recent_plan.delete()
-        ch_date = return_act['ch_date']['origin']
-        ch_place = return_act['ch_place']['origin']
-        ch_content = return_act['ch_content']['origin']
-        msg = '일시:' + str(ch_date) + '\n\n장소:' + ch_place + '\n\n시간:' + ch_content + '\n\n해당 일정 등록을 취소했습니다.'
-    return JsonResponse({
-        'version': '2.0',
-        'template': {
-            'outputs': [{
-                'simpleText': {
-                    'text': msg
-                }
-            }],
-            'quickReplies': [{
-                'label': '처음으로',
-                'action': 'message',
-                'messageText': '처음으로'
-            }]
-        }
-    })
-
-    
 @csrf_exempt
 def choose_change_plan(request):
     answer = ((request.body).decode('utf-8'))
@@ -377,8 +369,20 @@ def choose_change_plan(request):
     
     else:
         plan_num = int(input_num[0])-1
-        plan_db = Plan2.objects.filter(user=user_info, date = date)
-        plan_count = plan_db.count()
+        es = Elasticsearch('localhost:9200')
+        body = {
+            'query':{
+                'bool':{
+                    'must':[
+                        {'term':{'deadline':date}},
+                        {'term':{'userID': user_info}}
+                        ]
+                    }
+                }
+            }
+        res = es.search(index='schedule',body=body)
+        doc_source = res['hits']['hits'][plan_num]['_source']
+        plan_count = len(res['hits']['hits'])
         if int(input_num[0]) > plan_count:
             return JsonResponse({
                 'version': '2.0',
@@ -403,8 +407,7 @@ def choose_change_plan(request):
         })
     if return_str == '조회 후 일정 수정':
         if int(input_num[0]) <= plan_count:
-            ch_plan = plan_db[plan_num]
-            msg = '선택하신 일정입니다. \n\n' + '날짜 : '+str(ch_plan.date)+'\n\n장소 : '+ch_plan.place+'\n\n내용 : '+ch_plan.content + '\n\n수정할 항목을 선택해주세요.'
+            msg = '선택하신 일정입니다. \n\n' + '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n수정할 항목을 선택해주세요.'
             return JsonResponse({
                 'version': '2.0',
                 'template': {
@@ -437,8 +440,7 @@ def choose_change_plan(request):
             })
     elif return_str == '조회 후 일정 삭제':
         if int(input_num[0]) <= plan_count:
-            ch_plan = plan_db[plan_num]
-            msg = '선택하신 일정입니다. \n\n' + '날짜 : '+str(ch_plan.date)+'\n\n장소 : '+ch_plan.place+'\n\n내용 : '+ch_plan.content
+            msg = '선택하신 일정입니다. \n\n' + '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject']
             return JsonResponse({
                 'version': '2.0',
                 'template': {
@@ -475,10 +477,21 @@ def select_delete_plan(request):
     date = return_act['date']['origin']
     num = return_act['num']['origin']
     input_num = re.findall("\d+", num)
-    plan_db = Plan2.objects.filter(user=user_info, date = date)
     plan_num = int(input_num[0])-1
-    ch_plan = plan_db[plan_num]
-    ch_plan.delete()
+    es = Elasticsearch('localhost:9200')
+    body = {
+        'query':{
+            'bool':{
+                'must':[
+                    {'term':{'deadline':date}},
+                    {'term':{'userID': user_info}}
+                    ]
+                }
+            }
+        }
+    res = es.search(index='schedule',body=body)
+    doc_id = res['hits']['hits'][plan_num]['_id']
+    es.delete(index='schedule', id=doc_id)
     return JsonResponse({
         'version': '2.0',                        
         'template': {             

@@ -39,44 +39,44 @@ def notice_crawler():
         l.reverse()
         d.reverse()        
 
-        for i in range(len(t)):
-            notice.insert({"category" : DB_list[k] , "title": t[i], "link" : l[i], "date" : d[i]})
+#        for i in range(len(t)):
+#            notice.insert({"category" : DB_list[k] , "title": t[i], "link" : l[i], "date" : d[i]})
 
 #        for i in range(len(t)):
 #           temp.append({"category" : DB_list[k] , "title": t[i], "link" : l[i], "date" : d[i]})
 #        with open("notice.json", "w") as json_file:       
 #            json.dump(temp, json_file)
 
-#        temp = notice.find({"category" : DB_list[k]},{"date" : True})
-#        cnt = temp.count()
-#        lastest_date = temp[cnt-1]["date"]
-#        temp = notice.find({"date" : lastest_date},{"title" : True, "date" : True, "_id" :False})
-#        
-#        lastest_title =[]
-#        for i in temp:
-#            lastest_title.append(i["title"])
-#        
-#        insert_list = []
-#        
-#        for i in range(len(d)):
-#            if d[i] > lastest_date:
-#                insert_list.append(i)
-#            elif d[i] < lastest_date:
-#                pass
-#            else:
-#                if t[i] in lastest_title:
-#                    pass
-#               else:
-#                    insert_list.append(i)
-#
-#        if insert_list != []:
-#            for x in insert_list:
-#                notice.insert({"category" : DB_list[k] , "title": t[x], "link" : l[x], "date" : d[x]})
-#            ul.write(now.isoformat())
-#            ul.write('{0} update complate\n'.format(DB_list[k]))
-#        else:
-#            ul.write(now.isoformat())
-#            ul.write('{0} dose`t update\n'.format(DB_list[k]))
-#    ul.close()
+        temp = notice.find({"category" : DB_list[k]},{"date" : True})
+        cnt = temp.count()
+        lastest_date = temp[cnt-1]["date"]
+        temp = notice.find({"date" : lastest_date},{"title" : True, "date" : True, "_id" :False})
+        
+        lastest_title =[]
+        for i in temp:
+            lastest_title.append(i["title"])
+        
+        insert_list = []
+        
+        for i in range(len(d)):
+            if d[i] > lastest_date:
+                insert_list.append(i)
+            elif d[i] < lastest_date:
+                pass
+            else:
+                if t[i] in lastest_title:
+                    pass
+                else:
+                    insert_list.append(i)
+
+        if insert_list != []:
+            for x in insert_list:
+                notice.insert({"category" : DB_list[k] , "title": t[x], "link" : l[x], "date" : d[x]})
+            ul.write(now.isoformat())
+            ul.write('{0} update complate\n'.format(DB_list[k]))
+        else:
+            ul.write(now.isoformat())
+            ul.write('{0} dose`t update\n'.format(DB_list[k]))
+    ul.close()
 
 notice_crawler()
