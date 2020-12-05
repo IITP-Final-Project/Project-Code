@@ -16,7 +16,7 @@ from .DecodeAnswer import *
 # Schedule Welcome Function
 @csrf_exempt
 def Schedule(request):
-	userID, context = DecodeAnswer(request)
+	answer, userID, context = DecodeAnswer(request)
 	
 	## Searching Query Setting
 	es = Elasticsearch('localhost:9200')
@@ -47,7 +47,7 @@ def Schedule(request):
 	schedules = res['hits']['hits']
 
 	## Response Building
-	response = str(userID) + '!\n오늘 니 일정이 ' + str(count) + '개 있단다.\n'
+	response = str(userID) + ' 님의 오늘 일정 : ' + str(count) + '개\n'
 	
 	## Today Schedule List-up
 	if count > 5:
@@ -55,15 +55,13 @@ def Schedule(request):
 			response += '\nsubject: ' + str(schedule['_source']['subject'])
 			response += '\nplace: ' + str(schedule['_source']['place'])
 			response += '\n\n'
-		response += '오늘 이 외에도 ' + str(count - 5) + '개의 일정이 있으니까'
-		response += '\n전체 조회를 해보든가 말든가\n\n'
+		response += '오늘 이 외에도 ' + str(count - 5) + '개의 일정이 있습니다.\n\n'
 	else:
 		for schedule in schedules:
 			response += '\nsubject: ' + str(schedule['_source']['subject'])
 			response += '\nplace: ' + str(schedule['_source']['place'])
 			response += '\n\n'
 
-	response += '어쩔래?\n'
 
 	## Response finish
 	response_end = '------ 응답 끝 ------\n'
@@ -76,9 +74,19 @@ def Schedule(request):
 					"description": response,
 					"buttons": [
 						{
-							"label": "전체 일정 보여주세요 ㅠㅠ",
+							"label": "전체 일정 조회",
 							"action": "message",
 							"messageText": "호열 전체 일정 조회"
+						},
+						{
+							"label": "일정 등록하기",
+							"action": "message",
+							"messageText": "호열 일정 등록"
+						},
+						{
+							"label": "일정 수정하기",
+							"action": "message",
+							"messageText": "호열 일정 수정"
 						},
 						{
 							"label": "처음으로 돌아가라",
@@ -89,6 +97,11 @@ def Schedule(request):
 				}
 			}],
 			"quickReplies": [
+				{
+					"label": "오늘 일정 상세",
+					"action": "message",
+					"messageText": "오늘 일정 상세"
+				},
 				{
 					"label": "호열 테스트",
 					"action": "message",
@@ -104,10 +117,10 @@ def Schedule(request):
 	})
 	
 
-# Checking entire schedule function
+# Display entire schedule function
 @csrf_exempt
 def EntireSchedule(request):
-	userID, context = DecodeAnswer(request)
+	answer, userID, context = DecodeAnswer(request)
 
 	## Searching Query Setting
 	es = Elasticsearch('localhost:9200')
@@ -120,10 +133,15 @@ def EntireSchedule(request):
 				}
 			}
 		},
-		
 		"query": {
-			"term": {
-				"userID": userID
+			"bool": {
+				"filter": [
+					{
+						"term": {
+							"userID": userID
+						}
+					}
+				]
 			}
 		}
 	}
@@ -132,14 +150,17 @@ def EntireSchedule(request):
 	res = es.search(index=index, body=body)
 
 	count = res['hits']['total']['value']
-	schedules = res['hits']['hits']
+	#schedules = res['hits']['hits']
+	schedules = res['aggregations']['daily_count']['buckets']
 
 	## Responses Building
 	response = str(userID) + '님의 전체 일정 조회 결과입니다.'
-	response += '\n총 ' + str(count) + '개의 일정이 있습니다.'
+	#response += '\n총 ' + str(count) + '개의 일정이 있습니다.'
 
 	## Entire schedule list-up
-	#for schedule in schedules['hits']['hits'][:5]:
+	response += '\n'
+	for schedule in schedules:
+		response += str(schedule['key_as_string']) + ' : ' + str(schedule['doc_count']) + '\n\n'
 
 
 	
@@ -154,9 +175,9 @@ def EntireSchedule(request):
 					"description": response,
 					"buttons": [
 						{
-							"label": "전체 일정 보여주세요 ㅠㅠ",
+							"label": "상세 일정 볼래요",
 							"action": "message",
-							"messageText": "호열 전체 일정 조회"
+							"messageText": "상세 일정 조회"
 						},
 						{
 							"label": "처음으로 돌아가라",
@@ -182,10 +203,116 @@ def EntireSchedule(request):
 	})
 
 
+# Checking specific daily schedule function
+@csrf_exempt
+def DailySchedule(request):
+	answer, userID, context = DecodeAnswer(request)
+	contextParam = answer['action']['detailParams']
+
+	date = contextParam['date']['origin']
+	if date == 'today':
+		date = datetime.datetime.now()
+	else:
+		date = datetime.datetime.strptime(date, '%Y-%m-%d')
+	
+	
+
+
+	## Searching Query Setting
+	es = Elasticsearch('localhost:9200')
+	index = 'schedule'
+	body = {
+		"size": 100,
+		"query": {
+			"bool": {
+				"filter": [
+					{
+						"term": {
+							"userID": userID
+						}
+					},
+					{
+						"range": {
+							"deadline": {
+								"gte": date.strftime('%Y-%m-%d'),
+								"lt": (date + datetime.timedelta(days=1)).strftime('%Y-%m-%d')
+							}
+						}
+					}
+				]
+			}
+		}
+	}
+
+
+	## Searching. . .
+	res = es.search(index=index, body=body)
+
+	count = res['hits']['total']['value']
+	schedules = res['hits']['hits']
+
+	## Response Building
+	response = str(date.strftime('%Y-%m-%d')) + '에 진행되는 일정은 ' + str(count) + '개이며, 내용은 다음과 같습니다.\n'
+	
+	## Daily Schedule List-up
+	for schedule in schedules:
+		response += '\nsubject: ' + str(schedule['_source']['subject'])
+		response += '\nplace: ' + str(schedule['_source']['place'])
+		response += '\n\n'
+
+	
+	## Response finish
+	response_end = '\n------ 응답 끝 ------\n'
+	response += response_end
+	return JsonResponse({
+		"version": "2.0",
+		"template": {
+			"outputs": [{
+				"basicCard": {
+					"description": response,
+					"buttons": [
+						{
+							"label": "일정 수정하기",
+							"action": "message",
+							"messageText": "호열 일정 수정"
+						}
+					],
+				}
+			}]
+		}
+	})
 
 
 
+# Modify specific schedule function
+@csrf_exempt
+def ModifySchedule(request):
+	answer, userID, context = DecodeAnswer(request)
+	contextParam = answer['action']['detailParams']
 
+	
+	response = ""
+
+	## Response finish
+	response_end = '\n------ 응답 끝 ------\n'
+	response += response_end
+	return JsonResponse({
+		"version": "2.0",
+		"template": {
+			"outputs": [{
+				"basicCard": {
+					"description": response,
+					"buttons": [
+						{
+							"label": "처음으로 돌아가기",
+							"action": "message",
+							"messageText": "호열 테스트"
+						}
+					],
+				}
+			}]
+		}
+	})
 
 
 

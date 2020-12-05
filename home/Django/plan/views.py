@@ -66,13 +66,7 @@ def start_plan(request): # 일정 시작
                             'action': 'message',
                             'messageText': '일정 조회'
                         }]
-                }}],
-            'quickReplies': [
-                {
-                    'label': '처음으로',
-                    'action': 'message',
-                    'messageText': '처음으로'
-                }]
+                }}]
         }
     })
 
@@ -98,12 +92,7 @@ def message(request):
                     'basicCard': {
                         'description': '일시:' + date + '\n\n' + '장소:' + place + '\n\n' + '내용:' + content +
                                 '\n\n일정을 잘 저장했어요!'
-                    }}],
-                'quickReplies': [{
-                        'label': '처음으로',
-                        'action': 'message',
-                        'messageText': '처음으로'
-                }]
+                    }}]
             }
         })
    
@@ -115,11 +104,6 @@ def message(request):
                     'simpleText': {
                         'text': '알 수 없는 요청입니다. 처음으로 돌아가주세요.'
                         }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action': 'message',
-                    'messageText': '처음으로'
                }]
             }
         })
@@ -167,11 +151,6 @@ def check_plan(request):
                         'label': '일정 삭제',
                         'action': 'message',
                         'messageText': '조회 후 일정 삭제'
-                    },
-                    {
-                        'label': '처음으로',
-                        'action': 'message',
-                        'messageText': '처음으로'
                     }]
          }
         })
@@ -183,12 +162,6 @@ def check_plan(request):
                     'basicCard': {
                         'description': '선택하신 날짜('+str(date)+')의 '+show_plan(plan_count, plan_db)
                         }
-                    }],
-                'quickReplies': [
-                    {
-                        'label': '처음으로',
-                        'action': 'message',
-                        'messageText': '처음으로'
                     }]
             }})
 
@@ -241,11 +214,6 @@ def check_plan_date(request):
                             'messageText': '일정 상세조회'
                         }]
                     }
-                }],
-            'quickReplies': [{
-                'label': '처음으로',
-                'action': 'message',
-                'messageText': '처음으로'
             }]
         }
     })
@@ -287,11 +255,6 @@ def select_change_plan(request):
                     'simpleText': {
                         'text': '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n일정 수정완료!'
                         }
-                }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                 }]
             }
         })
@@ -306,11 +269,6 @@ def select_change_plan(request):
                     'simpleText': {
                         'text': '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n>일정 수정완료!'
                         }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -325,11 +283,6 @@ def select_change_plan(request):
                     'simpleText': {
                         'text': '날짜 : '+str(doc_source['deadline'])+'\n\n장소 : '+doc_source['place']+'\n\n내용 : '+doc_source['subject'] + '\n\n>일정 수정완료!'
                         }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -358,11 +311,6 @@ def choose_change_plan(request):
                                 'messageText': '일정 상세조회'
                             }]
                         }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action': 'message',
-                    'messageText': '처음으로'
                 }]
             }
         })
@@ -397,11 +345,6 @@ def choose_change_plan(request):
                                     'messageText': '일정 상세조회'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action': 'message',
-                    'messageText': '처음으로'
                 }]
             }
         })
@@ -430,12 +373,7 @@ def choose_change_plan(request):
                                         'action': 'message',
                                         'messageText': '조회 후 내용 수정'
                                 }]
-                        }}],
-                    'quickReplies': [{
-                        'label': '처음으로',
-                        'action': 'message',
-                        'messageText': '처음으로'
-                    }]
+                        }}]
                 }
             })
     elif return_str == '조회 후 일정 삭제':
@@ -458,12 +396,7 @@ def choose_change_plan(request):
                                     'action': 'message',
                                     'messageText': '일정 상세조회'
                                     }]
-                                }}],
-                        'quickReplies': [{
-                            'label': '처음으로',
-                            'action': 'message',
-                            'messageText': '처음으로'
-                            }]
+                                }}]
                         }
                 })
 
@@ -499,11 +432,6 @@ def select_delete_plan(request):
                 'simpleText': {
                     'text': '해당 일정을 삭제했습니다.'
                     }
-                }],
-            'quickReplies': [{
-                'label': '처음으로',
-                'action': 'message',
-                'messageText': '처음으로'
                 }]
             }
         })    
@@ -516,42 +444,19 @@ def test(request):
     user_info = return_json_str['userRequest']['user']['properties']['plusfriendUserKey']
     now = datetime.date.today()
     return_act = return_json_str['action']['detailParams']
-    search = return_act['search']['origin']
+    num1 = return_act['num']['value']
+#    num2 = return_act['num']['value']
 #    plan_db = Plan2.objects.filter(date = now, user = user_info)
 #    a=Plan2.objects.all()
 #    plan_db_count = len(plan_db)
 #    plan_db_last = plan_db[len(plan_db)-1]
 #    plan_db_last.delete()
-
-
-
-
-    es = Elasticsearch('localhost:9200')
-
-    index = 'lecture_rate'
-    search_field = 'context'
-    body = {"query":
-            {"match":
-                {search_field: search  #"context": search
-                    }
-                }
-            }
-
-    res = es.search(index=index, body=body)
-    
-    result = []
-    for hit in res['hits']['hits']:
-        result.append(hit['_source']['context'])
-    msg = '\''+search+'\' 검색 결과입니다.\n\n'
-    for i in range(len(result)):
-        msg += str(i+1)+'. '+result[i]+'\n\n'
-
     return JsonResponse({
         'version': '2.0',
         'template': {
             'outputs': [{
                 'simpleText': {
-                    'text': msg  #'test'
+                    'text': num1  #'test'
                         }
                 }]
             }

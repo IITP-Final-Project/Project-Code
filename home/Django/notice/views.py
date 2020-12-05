@@ -67,11 +67,6 @@ def start_notice(request):
                     'label': '검색',
                     'action': 'message',
                     'messageText': '공지 검색'
-                },
-                {
-                    'label': '처음으로',
-                    'action': 'message',
-                    'messageText': '처음으로'
             }]
         }
     })
@@ -127,11 +122,6 @@ def select_notice(request):
                                 'webLinkUrl': 'http://sejong.korea.ac.kr/user/boardList.do?handle=102914&siteId=kr&id=kr_050108010000'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -150,11 +140,6 @@ def select_notice(request):
                                 'webLinkUrl': 'http://sejong.korea.ac.kr/user/boardList.do?handle=101685&siteId=kr&id=kr_050108020000'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -172,11 +157,6 @@ def select_notice(request):
                                 'action': 'webLink',                                'webLinkUrl': 'http://sejong.korea.ac.kr/campuslife/notice/college'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -195,11 +175,6 @@ def select_notice(request):
                                 'webLinkUrl': 'http://sejong.korea.ac.kr/user/boardList.do?handle=61751&siteId=kr&id=kr_050107000000'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -218,11 +193,6 @@ def select_notice(request):
                                 'webLinkUrl': 'http://sejong.korea.ac.kr/campuslife/notice/scholarship'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -241,11 +211,6 @@ def select_notice(request):
                                 'webLinkUrl': 'http://sejong.korea.ac.kr/campuslife/notice/career'
                                 }]
                             }
-                    }],
-                'quickReplies': [{
-                    'label': '처음으로',
-                    'action':'message',
-                    'messageText': '처음으로'
                     }]
                 }
             })
@@ -293,11 +258,6 @@ def search_notice(request):
                 'simpleText': {
                     'text': msg
                     }
-                }],
-            'quickReplies': [{
-                'label': '처음으로',
-                'action': 'message',
-                'messageText': '처음으로'
                 }]
             }
         })

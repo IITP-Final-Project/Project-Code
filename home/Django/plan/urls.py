@@ -17,4 +17,6 @@ urlpatterns = [
 
     path('plan_elastic/', hy_views.Schedule, name='hy_Schedule'),
 	path('plan_elastic/entire/', hy_views.EntireSchedule, name='hy_EntireSchedule'),
+	path('plan_elastic/dailyschedule/', hy_views.DailySchedule, name='hy_DailySchedule'),
+	path('plan_elastic/modifyschedule/', hy_views.ModifySchedule, name='hy_ModifySchedule'),
 ]

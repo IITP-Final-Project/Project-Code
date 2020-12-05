@@ -52,11 +52,6 @@ def start_lecture(request):
                 'simpleText': {
                     'text': msg
                     }
-                }],
-            'quickReplies': [{
-                'label': '처음으로',
-                'action': 'message',
-                'messageText': '처음으로'
                 }]
             }
         })

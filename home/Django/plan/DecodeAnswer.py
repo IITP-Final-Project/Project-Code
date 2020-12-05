@@ -19,4 +19,4 @@ def DecodeAnswer(request):
 	userID = answer['userRequest']['user']['properties']['plusfriendUserKey']
 	context = answer['userRequest']['utterance']
 
-	return userID, context
+	return answer, userID, context
